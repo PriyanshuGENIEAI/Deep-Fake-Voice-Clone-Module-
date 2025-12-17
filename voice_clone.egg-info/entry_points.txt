@@ -1,0 +1,2 @@
+[console_scripts]
+voice-clone = voice_clone.__main__:main
