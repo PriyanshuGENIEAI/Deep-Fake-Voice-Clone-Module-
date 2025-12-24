@@ -1,41 +1,31 @@
 from setuptools import setup, find_packages
 
-# Read the contents of your README file
-with open("README.md", "r", encoding="utf-8") as fh:
-    long_description = fh.read()
-
-# Read the requirements from requirements.txt
-with open("requirements.txt", "r", encoding="utf-8") as f:
-    requirements = f.read().splitlines()
-
 setup(
-    name="voice-clone-ai",
-    version="1.0.0",
-    author="Your Name",
-    author_email="your.email@example.com",
-    description="A simple and powerful tool to clone voices using AI.",
-    long_description=long_description,
-    long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/voice-clone",
+    name="chatterbox-server",
+    version="0.1.0",
+    description="Modular TTS service and API for ChatterboxTTS",
     packages=find_packages(),
-    install_requires=requirements,
-    classifiers=[
-        "Development Status :: 4 - Beta",
-        "Intended Audience :: Developers",
-        "Intended Audience :: Science/Research",
-        "License :: OSI Approved :: MIT License",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
-        "Topic :: Multimedia :: Sound/Audio :: Speech",
-        "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    install_requires=[
+        "fastapi>=0.110,<0.115",
+        "uvicorn[standard]>=0.24,<0.28",
+        "torchaudio",
+        "torch",
     ],
-    python_requires=">=3.8",
-    entry_points={
-        'console_scripts': [
-            'voice-clone=voice_clone.cli.main:main',
+    extras_require={
+        "gui": [
+            "PyQt6==6.5.3",
+            "PyQt6-Qt6==6.5.3",
+            "PyQt6-sip==13.5.1",
+        ],
+        "pyside": [
+            "PySide6==6.5.3",
         ],
     },
-    keywords="tts, voice-clone, text-to-speech, ai, deep-learning, gradio",
+    entry_points={
+        "console_scripts": [
+            "chatterbox-api=chatterbox_server.api:main",
+            "chatterbox-gui=chatterbox_gui.gui:main",
+        ]
+    },
+    python_requires=">=3.9",
 )

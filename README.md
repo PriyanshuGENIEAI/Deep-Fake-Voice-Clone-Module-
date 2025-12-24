@@ -1,101 +1,137 @@
-# Deep-Fake-Voice-Clone-Module 🔊
+# Chatterbox TTS Service (Mac-Optimized)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
-
-A simple and powerful tool to clone voices using AI, built with Coqui TTS and Gradio.
+A modular, low-compute Text-to-Speech service built on `ChatterboxTTS` with a production-friendly API. Optimized for Apple Silicon (M1/M2/M3/M4) using MPS with CPU fallback.
 
 ## Features
+- Low-compute defaults (1 thread, interop=1, MPS when available, optional FP16)
+- Energy-trimmed, denoised and cached voice prompt preprocessing for better cloning
+- Sentence-based chunking with short-chunk merging to reduce overhead
+- Overlap-add crossfade for smoother streaming continuity
+- Postprocessing (gain/compand/EQ) for clarity and loudness
+- FastAPI endpoints for easy backend integration (JSON or multipart)
 
-- **🎙️ High-Quality Voice Cloning:** Generate realistic speech from just a few seconds of reference audio.
-- **🚀 GPU Accelerated:** Automatically uses CUDA for fast inference if a compatible GPU is detected.
-- **🌐 Interactive Web UI:** A user-friendly Gradio interface for easy experimentation.
-- **� Packaged for Distribution:** A proper Python package that can be installed via pip.
-- **⌨️ Command-Line Interface:** A CLI for running voice cloning and launching the web app.
+## Install
+Torch and torchaudio wheels vary by platform. If installing from scratch:
+- First install a compatible Torch/torchaudio for your system (see pytorch.org)
+- Then install the API package dependencies
 
-## Installation
-
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/yourusername/voice-clone.git
-    cd voice-clone
-    ```
-
-2.  **Create and activate a virtual environment (recommended):**
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
-    ```
-
-3.  **Install the package in editable mode:**
-    This will install the necessary dependencies from `requirements.txt`.
-    ```bash
-    pip install -e .
-    ```
-
-## Usage
-
-### Web Interface
-
-To launch the Gradio web interface, run the following command in your terminal:
-
-```bash
-voice-clone web
-```
-
-Then, open your web browser and navigate to the local URL provided (usually `http://127.0.0.1:7860`).
-
-### Command-Line Interface
-
-You can also run the voice cloning process directly from the command line.
-
-```bash
-voice-clone run --text "This is a test of the voice cloning system." --ref ./audio/sample.wav --out ./generated_speech.wav
-```
-
-**Arguments:**
-
-*   `--text`: The text you want the cloned voice to say.
-*   `--ref`: The path to the reference audio file (a clear, 5-10 second sample is recommended).
-*   `--out`: The path to save the generated audio file.
-
-## Project Structure
+Example (you may already have torch/torchaudio):
 
 ```
-voice-clone/
-├── voice_clone/
-│   ├── __init__.py           # Package initializer
-│   ├── core/                 # Core logic
-│   │   ├── __init__.py
-│   │   └── tts_engine.py     # Main TTS engine
-│   ├── web/                  # Web interface
-│   │   ├── __init__.py
-│   │   └── app.py            # Gradio web application
-│   └── cli/                  # Command-line interface
-│       ├── __init__.py
-│       └── main.py           # CLI implementation
-├── tests/                    # Unit and integration tests
-├── audio/                    # Example audio files
-├── requirements.txt          # Project dependencies
-├── setup.py                  # Package setup script
-└── README.md                 # This file
+# recommend a virtualenv
+python -m venv .venv && source .venv/bin/activate
+pip install --upgrade pip
+# install torch+torchaudio for your system first (visit pytorch.org for the right command)
+# pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+
+# install API deps
+pip install fastapi uvicorn[standard]
+# or install the package (will attempt to install torch+torchaudio if missing)
+pip install -e .
 ```
 
-## Contributing
+## Run the API
+```
+python -m scripts.run_api
+# or
+chatterbox-api  # console script
+```
+Environment variables:
+- CHATTERBOX_API_HOST: default 127.0.0.1
+- CHATTERBOX_API_PORT: default 8000
 
-Contributions are welcome! Please feel free to submit a pull request.
+OpenAPI docs: http://localhost:8000/docs
 
-1.  Fork the repository.
-2.  Create your feature branch (`git checkout -b feature/AmazingFeature`).
-3.  Commit your changes (`git commit -m 'Add some AmazingFeature'`).
-4.  Push to the branch (`git push origin feature/AmazingFeature`).
-5.  Open a pull request.
+## Run the GUI (PyQt6)
+The GUI records a prompt (WAV/MP3), lets you type text, and generates speech with controls for speed/quality, pitch, and tempo.
+
+Install extra dep (if not installed through setup.py):
+```
+pip install PyQt6
+```
+
+Launch:
+```
+chatterbox-gui
+# or
+python -m chatterbox_gui.gui
+```
+
+Controls:
+- Prompt: browse existing audio or record from microphone (WAV/MP3). Recording uses 16k mono by default.
+- Text: enter text to speak.
+- Parameters:
+  - Fast mode: low latency preset (exaggeration 0.8, cfg 0.15, trim ~2s).
+  - Exaggeration, CFG weight, Prompt trim seconds.
+  - Stream chunks, Fade ms.
+  - Pitch (semitones), Tempo (time-stretch) for postprocessing.
+- Output: choose target WAV and Generate; playback inside the app.
+
+## API
+### POST /synthesize (application/json)
+Request body:
+```
+{
+  "text": "your text",
+  "audio_prompt_path": "/path/to/prompt.wav",          # optional
+  "audio_prompt_b64": "...base64 wav...",               # optional alternative
+  "fast_mode": true,
+  "exaggeration": 0.8,
+  "cfg_weight": 0.15,
+  "prompt_trim_seconds": 2.0,
+  "streaming": false,
+  "return_base64": true
+}
+```
+Response when return_base64=true:
+```
+{
+  "audio_b64": "...",
+  "sr": 24000
+}
+```
+Response when return_base64=false:
+```
+{
+  "file_path": "/tmp/tmpabcd.wav",
+  "sr": 24000
+}
+```
+
+### POST /synthesize_upload (multipart/form-data)
+Form fields:
+- text: string
+- file: binary (audio prompt)
+- fast_mode, exaggeration, cfg_weight, prompt_trim_seconds, streaming, return_base64
+
+Returns same structure as /synthesize.
+
+## Using the Python service directly
+```python
+from chatterbox_server.tts_service import TTSService, TTSSettings
+
+svc = TTSService()
+settings = TTSSettings(fast_mode=True, cfg_weight=0.15, exaggeration=0.8, prompt_trim_seconds=2.0)
+audio_bytes = svc.synthesize_bytes("hello world", "/path/to/prompt.wav", settings)
+with open("out.wav", "wb") as f:
+    f.write(audio_bytes)
+```
+
+## Notes on performance and quality
+- For lowest latency: fast_mode=true (exaggeration≈0.8, cfg≈0.15, trim≈2s).
+- For better clone accuracy: fast_mode=false (exaggeration≈1.0, cfg≈0.25, trim≈3.5s).
+- Prompts: use clean, close-mic speech. The service automatically picks a high-energy window and trims silence.
+- MPS is enabled by default when available; CPU fallback is automatic via PYTORCH_ENABLE_MPS_FALLBACK=1.
+
+## Project layout
+- chatterbox_server/
+  - processing.py: audio prep/post & streaming helpers
+  - tts_service.py: service class with synthesize methods
+  - api.py: FastAPI app with endpoints
+- scripts/run_api.py: API runner
+- setup.py: package config
+- README.md: this file
+- example_for_mac_optimized.py: standalone example script
 
 ## License
-
-This project is licensed under the MIT License. See the `LICENSE` file for details.
-
-## Acknowledgments
-
-*   **[Coqui TTS](https://github.com/coqui-ai/TTS):** The powerful text-to-speech library that powers this project.
-*   **[Gradio](https://www.gradio.app/):** For making it easy to create a beautiful and interactive web UI.
+MIT (replace with your project’s license if different)
