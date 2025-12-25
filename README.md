@@ -1,4 +1,4 @@
-# Chatterbox TTS (Mac-Optimized, Modular API + GUI)
+# Custom Chatterbox TTS (Mac-Optimized, Modular API + GUI)
 
 A modular, low-compute Text-to-Speech service built on `ChatterboxTTS`. Optimized for Apple Silicon (M1/M2/M3/M4) using MPS with CPU fallback. Includes:
 - FastAPI service for backend integration
