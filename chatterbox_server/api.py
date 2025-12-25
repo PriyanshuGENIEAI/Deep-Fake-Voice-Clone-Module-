@@ -7,7 +7,13 @@ from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import JSONResponse, StreamingResponse, Response
 import uvicorn
 
-from .tts_service import TTSService, TTSSettings
+try:
+    from .tts_service import TTSService, TTSSettings
+except Exception:
+    # Fallback for direct execution: python chatterbox_server/api.py
+    import os as _os, sys as _sys
+    _sys.path.append(_os.path.dirname(_os.path.dirname(__file__)))
+    from chatterbox_server.tts_service import TTSService, TTSSettings
 
 app = FastAPI(title="Chatterbox TTS API", version="0.1.0")
 svc = TTSService()

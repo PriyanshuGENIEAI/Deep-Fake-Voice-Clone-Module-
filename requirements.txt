@@ -1,6 +1,10 @@
 # Core runtime requirements (API / service)
 fastapi>=0.110,<0.115
 uvicorn[standard]>=0.24,<0.28
-# Install torch/torchaudio compatible with your platform from https://pytorch.org/get-started/locally/
-torch
-torchaudio
+
+# Chatterbox TTS (pulls transformers, diffusers, etc.)
+chatterbox-tts==0.1.6
+
+# Torch stack (pin to match chatterbox-tts 0.1.6 tested environment)
+torch==2.6.0
+torchaudio==2.6.0

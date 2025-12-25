@@ -2,7 +2,13 @@ import argparse
 import os
 from typing import Optional
 
-from .tts_service import TTSService, TTSSettings
+try:
+    from .tts_service import TTSService, TTSSettings
+except Exception:
+    # Fallback for direct execution: python chatterbox_server/cli.py
+    import os as _os, sys as _sys
+    _sys.path.append(_os.path.dirname(_os.path.dirname(__file__)))
+    from chatterbox_server.tts_service import TTSService, TTSSettings
 
 
 def main() -> None:

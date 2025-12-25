@@ -7,16 +7,31 @@ import torch
 import torchaudio as ta
 
 from chatterbox.tts import ChatterboxTTS
-from .processing import (
-    device_and_map,
-    low_compute_defaults,
-    split_text_chunks,
-    ensure_mono_1xT,
-    tensor_to_pcm16_bytes,
-    write_streaming_wav,
-    postprocess_output,
-    trim_prompt,
-)
+try:
+    from .processing import (
+        device_and_map,
+        low_compute_defaults,
+        split_text_chunks,
+        ensure_mono_1xT,
+        tensor_to_pcm16_bytes,
+        write_streaming_wav,
+        postprocess_output,
+        trim_prompt,
+    )
+except Exception:
+    # Fallback for direct execution: python chatterbox_server/tts_service.py
+    import os as _os, sys as _sys
+    _sys.path.append(_os.path.dirname(_os.path.dirname(__file__)))
+    from chatterbox_server.processing import (
+        device_and_map,
+        low_compute_defaults,
+        split_text_chunks,
+        ensure_mono_1xT,
+        tensor_to_pcm16_bytes,
+        write_streaming_wav,
+        postprocess_output,
+        trim_prompt,
+    )
 
 
 @dataclass
